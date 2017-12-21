@@ -1,2 +1,2 @@
-# irc_bot
-irc_bot
+## PyBot
+
