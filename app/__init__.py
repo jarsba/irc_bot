@@ -7,11 +7,4 @@ import string
 import time
 import queue
 
-cmd_q = queue.Queue()
-resp_q = queue.Queue()
-
 command_control = CC()
-time.sleep(10)
-
-while 1:
-    time.sleep(1)

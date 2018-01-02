@@ -25,8 +25,8 @@ class Bot():
 
     def run(self):
         self.join_server()
-        # listen_thread = threading.Thread(target=self.listen, args=(self.sock,))
-        # listen_thread.start()
+        self.add_master_socket()
+        self.listen()
 
     def print_envs(self):
         print("\n######## BOT CONFIG ########")
@@ -58,4 +58,29 @@ class Bot():
         resp = self.sock.recv(4096).decode("UTF-8")
         print(" ".join(resp))
         self.master_sock.send(bytes("PRIVMSG " + master_channel + " :" + "[" + self.botnick + "]: " + resp + "\r\n", "UTF-8"))
+
+    def add_master_socket(self):
+        host = "127.0.0.1"
+        port = self.get_port()
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        try:
+            s.bind((host, port))
+            self.local_port = port
+        except socket.error as msg:
+            print ('Binding failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
+
+        s.listen(5)
+
+        while 1:
+            conn, addr = s.accept()
+
+    def get_port(self):
+        test_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        port = 1023
+        # result == 0 equals free port
+        while result != 0 or port < 65535:
+            port = port + 1
+            result = test_sock.connect_ex(('127.0.0.1', 80))
+        return port
 
