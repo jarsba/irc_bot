@@ -4,12 +4,15 @@ from app.bot import Bot
 from config import *
 import time
 import threading
+import select
+import ssl
 
-ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#ircsock = ssl.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
 server = MASTERSERVER[0]
 channel = MASTERCHANNEL
 masternick = MASTERNICK
 bots = []
+
 
 class CC():
 
@@ -30,43 +33,61 @@ class CC():
             self.listen()
 
     def print_envs(self):
-        print("##### C&C CONFIG #####")
+        print("\n######### C&C CONFIG #########")
         print("C&C SERVER: " + server)
         print("C&C CHANNEL: " + channel)
         print("C&C MASTERNICK: " + masternick)
-        print("######################")
-
-    def create_bots(self):
-        for server in BOTSERVERS:
-            bot = Bot(server, ''.join([random.choice(string.ascii_letters) for n in range(9)]))
-            bots.append(bot)
-            time.sleep(10)
+        print("##############################\n")
 
     def join_server(self):
-        ircsock.connect((server, 6667))
-        ircsock.send(bytes("USER " + masternick + " " + masternick + " " + masternick + " " + masternick + "\n","UTF-8"))
-        ircsock.send(bytes("NICK " + masternick + "\n", "UTF-8"))
-        print("CONNECTED TO SERVER " + server + " WITH MASTERNICK " + masternick)
-        time.sleep(3)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((server, 6667))
+        self.sock.send(bytes("USER " + masternick + " " + masternick + " " + masternick + " " + masternick + "\n","UTF-8"))
+        self.sock.send(bytes("NICK " + masternick + "\n", "UTF-8"))
 
     def create_channel(self):
-        ircsock.send(bytes("JOIN "+ channel +"\n", "UTF-8"))
-        print("CREATED C&C CHANNEL " + channel)
+        self.sock.send(bytes("JOIN "+ channel +"\n", "UTF-8"))
         time.sleep(3)
 
-    def command(msg, target = channel):
-        ircsock.send(bytes("PRIVMSG " + target + " :" + msg + "\n", "UTF-8"))
+    # def create_sockets(self):
+    #     for server in BOTSERVERS:
+    #         for_read = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #         for_write = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #         for_read.connect((server, 6667))
+    #         for_write.connect((server, 6667))
+    #
+
+
+    def create_bots(self):
+        for i, server in enumerate(BOTSERVERS):
+            bot = Bot(server, self.sock)
+            bots.append(bot)
+
 
     def listen(self):
         while 1:
             time.sleep(1)
             ircmsg = ""
             while ircmsg.find("QUIT") == -1:
-                ircmsg = ircsock.recv(2048).decode("UTF-8")
-                print(ircmsg)
-                if(ircmsg.find("WHOIS") != -1):
-                    print("WHOIS-QUERY MADE")
-                    who = ircmsg.split(":")[2].split(" ")[1]
-                    for bot in bots:
-                        resp = bot.whois(who)
-                        ircsock.send(bytes("PRIVMSG "+ channel +" :"+ bot.botnick + " says: " + resp + "\n", "UTF-8"))
+
+                ircmsg = self.sock.recv(2048).decode("UTF-8")
+                buffer = ircmsg.split("\r\n")
+                if len(ircmsg) == 0:
+                    print(masternick + " GOT TIMEOUT")
+                for line in buffer:
+                    print(line)
+                    line = line.split(" ")
+                    if line[0] == "PING":
+                        self.sock.send(bytes("PONG " + line[1] + "\r\n", "UTF-8"))
+
+                    if len(line) >= 4:
+                        if line[1] == "PRIVMSG":
+                            command = line[3][1:] + " " + line[4]
+                            for bot in bots:
+                                bot.command(command)
+
+
+    # def command(self, cmd):
+    #     for bot in bots:
+    #         bot.cmd_status = cmd
+    #     self.listen()

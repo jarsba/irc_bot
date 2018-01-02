@@ -5,6 +5,10 @@ from config import *
 import random
 import string
 import time
+import queue
+
+cmd_q = queue.Queue()
+resp_q = queue.Queue()
 
 command_control = CC()
 time.sleep(10)
