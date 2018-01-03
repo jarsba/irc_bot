@@ -202,6 +202,7 @@ class Bot():
             sock.send(bytes(msg + "\r\n", "UTF-8"))
             return True
         except:
+            if sock
             print("Sending to " + str(sock.getsockname()) + " failed")
             return False
 

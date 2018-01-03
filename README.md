@@ -6,13 +6,19 @@ A small python3 program to listen C&C-servers commands and return commands outpu
 
 As default PyBot uses chat.freenode.net as masterserver, as hostservers irc.inet.fi and irc.​as.​rizon.​net and connections without SSL
 
-> cd ~/path/to/program/folder
-
-> python3 run.py --master masterserver --servers /path/to/serverlist --ssl
-
-> Example: python3 run.py
-
-> Example: python3 run.py --master chat.freenode.net --servers /root/servers.txt --ssl
+##### Run
+Go to folder:
+```bash
+cd ~/path/to/program/folder
+```
+R without args:
+```python
+python3 run.py
+```
+Run with one or more args:
+```python
+python3 run.py --master chat.freenode.net --servers /root/servers.txt --ssl
+```
 
 PyBot prints you C&C-server's servername and C&C-channel where you can join and start giving commands.
 
