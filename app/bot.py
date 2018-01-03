@@ -166,7 +166,6 @@ class Bot():
     def whois(self, nick):
         msg_success = self.send(self.host_sock, "WHOIS " + nick)
         if msg_success:
-            answer = ""
             while True:
                 resp = self.host_sock.recv(2048).decode("UTF-8")
                 buffer = resp.split("\r\n")
