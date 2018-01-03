@@ -5,6 +5,7 @@ import time
 import threading
 import re
 import select
+import ssl
 
 class Bot():
 
@@ -19,9 +20,9 @@ class Bot():
 
         self.cmd_status = 0
 
-        # Servers random string nick, so name collision is not likely
+        # Servers random string nick, so name collision is not so likely
 
-        self.nick = ''.join([random.choice(string.ascii_lowercase) for n in range(9)])
+        self.nick = "".join([random.choice(string.ascii_lowercase) for n in range(9)])
 
         # Start new thread for bot
 
@@ -32,8 +33,14 @@ class Bot():
 
     def run(self):
         self.print_envs()
-        self.join_master_server()
-        self.join_host_server()
+        try:
+            self.join_master_server()
+        except:
+            print("Could not connect to master server")
+        try:
+            self.join_host_server()
+        except:
+            print("Could not connect to master server")
         self.listen()
 
     def print_envs(self):
@@ -43,9 +50,10 @@ class Bot():
         print("############################\n")
 
     def join_master_server(self):
-
         self.master_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.master_sock.connect((MASTERSERVER[0], 6667))
+        if SSL:
+            self.master_sock = ssl.wrap_socket(self.master_sock)
+        self.master_sock.connect((MASTERSERVER[0], PORT))
         self.master_sock.send(
             bytes("USER " + self.nick + " " + self.nick + " " + self.nick + " " + self.nick + "\n",
                   "UTF-8"))
@@ -54,7 +62,9 @@ class Bot():
 
     def join_host_server(self):
         self.host_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.host_sock.connect((self.server, 6667))
+        if SSL:
+            self.host_sock = ssl.wrap_socket(self.host_sock)
+        self.host_sock.connect((self.server, PORT))
         self.host_sock.send(
             bytes("USER " + self.nick + " " + self.nick + " " + self.nick + " " + self.nick + "\n", "UTF-8"))
         self.host_sock.send(bytes("NICK " + self.nick + "\n", "UTF-8"))
@@ -62,7 +72,7 @@ class Bot():
 
     def listen(self):
 
-        # Listening both host and master servers
+        # Listening both host and master servers, need to respond to PING on both servers
 
         while 1:
             msg = ""
@@ -80,16 +90,16 @@ class Bot():
                             print(line)
                             line = line.split(" ")
                             if line[0] == "PING":
-                                self.master_sock.send(bytes("PONG " + line[1] + "\r\n", "UTF-8"))
+                                self.send(self.master_sock, "PONG " + line[1])
 
                             if len(line) >= 4:
                                 if line[1] == "PRIVMSG":
-                                    if line[3][1:].lower() == 'cmd':
+                                    if line[3][1:].lower() == "cmd":
                                         print(self.botnick + " GOT COMMAND")
                                         command = line[4] + " " + line[5]
 
-                                        # Here could be many other commands, could also write
-                                        # universal command-function, but it makes
+                                        # Could ask also universal command-function instead of
+                                        # writing different functions for every command
 
                                         if line[4].lower() == "whois":
                                             self.whois(line[5])
@@ -104,7 +114,9 @@ class Bot():
                             print(line)
                             line = line.split(" ")
                             if line[0] == "PING":
-                                self.host_sock.send(bytes("PONG " + line[1] + "\r\n", "UTF-8"))
+                                self.send(self.host_sock, "PONG " + line[1])
+
+            self.stop = True
 
     def whois(self, nick):
         msg_success = self.send(self.host_sock, "WHOIS " + nick)
@@ -117,7 +129,7 @@ class Bot():
                     answer = answer + line + "\r\n"
                     line = line.split(" ")
                     if len(line) >= 8:
-                        if re.sub("[^a-z]+","","".join(line[4:]).lower()) == 'endofwhoislist':
+                        if re.sub("[^a-z]+","","".join(line[4:]).lower()) == "endofwhoislist":
                             self.master_sock.send(
                                 bytes("PRIVMSG " + MASTERCHANNEL + " :" + "[" + self.botnick + "]: " + resp + "\r\n",
                                       "UTF-8"))
@@ -130,3 +142,9 @@ class Bot():
         except:
             print("Sending to " + sock.gethostname() + " failed")
             return False
+
+    def ping(self, sock):
+        try:
+            sock.send(bytes("PING" + "\r\n", "UTF-8"))
+        except:
+            print("")
