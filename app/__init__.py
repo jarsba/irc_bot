@@ -8,3 +8,5 @@ import time
 import queue
 
 command_control = CC()
+while 1:
+    time.sleep(1)
