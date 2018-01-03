@@ -8,15 +8,15 @@ As default PyBot uses chat.freenode.net as masterserver, as hostservers irc.inet
 
 ##### Run
 Go to folder:
-```bash
+```shell
 cd ~/path/to/program/folder
 ```
 R without args:
-```python
+```shell
 python3 run.py
 ```
 Run with one or more args:
-```python
+```shell
 python3 run.py --master chat.freenode.net --servers /root/servers.txt --ssl
 ```
 
