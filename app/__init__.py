@@ -43,9 +43,23 @@ def print_botservers():
 print_cc_info()
 print_botservers()
 
+bots = []
+
 for server in BOTSERVERS:
     bot = Bot(server)
+    bots.append(bot)
+
+time.sleep(10)
+
+# Check if any bots alive
 
 while 1:
+    cont = False
+    for bot in bots:
+        if bot.thread.isAlive():
+            cont = True
+    if cont == False:
+        break
     time.sleep(1)
 
+exit(0)

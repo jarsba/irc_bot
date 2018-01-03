@@ -25,9 +25,9 @@ class Bot():
 
         # Start new thread for bot
 
-        thread = threading.Thread(target=self.run, args=())
-        thread.daemon = True
-        thread.start()
+        self.thread = threading.Thread(target=self.run, args=())
+        self.thread.daemon = True
+        self.thread.start()
 
     def run(self):
         while self.stop == False:
@@ -91,6 +91,8 @@ class Bot():
             bytes("USER " + self.nick + " " + self.nick + " " + self.nick + " " + self.nick + "\n", "UTF-8"))
         self.host_sock.send(bytes("NICK " + self.nick + "\n", "UTF-8"))
 
+    # Mainloop where the magic happens
+
     def listen(self):
 
         # Listening both host and master servers, need to respond to PING on both servers
@@ -100,9 +102,11 @@ class Bot():
             time.sleep(1)
 
             # Using select-library to manage socket statuses, otherwise answering takes a long time while in wait-loop
+            try:
+                readables, writables, exceptionals = select.select([self.master_sock], [self.master_sock],[self.master_sock])
+            except:
+                continue
 
-            readables, writables, exceptionals = select.select([self.master_sock], [self.master_sock],
-                                                               [self.master_sock])
             if len(readables) == 1:
                 try:
                     msg = self.master_sock.recv(2048).decode("UTF-8")
@@ -111,10 +115,15 @@ class Bot():
                     self.join_master_server()
                     self.listen()
 
+                # If message is empty, then connection could be detached
+
                 if len(msg) > 0:
                     buffer = msg.split("\r\n")
                     for line in buffer:
+
+                        # Uncomment if want to hear sockets
                         # print(line)
+
                         line = line.split(" ")
                         if line[0] == "PING":
                             self.send(self.master_sock, "PONG " + line[1])
@@ -125,6 +134,8 @@ class Bot():
 
                                 if line[3][1:].lower() == "quit":
                                     self.send(self.master_sock, "PRIVMSG " + MASTERCHANNEL + " :" + "[" + self.botnick + "]: " +  "quitting...")
+                                    self.master_sock.close()
+                                    self.host_sock.close()
                                     self.stop = True
                                     print(self.botnick +  " killing itself")
 
@@ -141,8 +152,11 @@ class Bot():
                     self.join_master_server()
                     self.listen()
 
-            readables, writables, exceptionals = select.select([self.host_sock], [self.host_sock],
-                                                               [self.host_sock])
+            try:
+                readables, writables, exceptionals = select.select([self.host_sock], [self.host_sock], [self.host_sock])
+            except:
+                continue
+
             if len(readables) == 1:
                 try:
                     host_msg = self.host_sock.recv(2048).decode("UTF-8")
@@ -151,10 +165,15 @@ class Bot():
                     self.join_host_server()
                     self.listen()
 
+                # If message is empty, then connection could be detached
+
                 if len(host_msg) > 0:
                     host_msg_buf = host_msg.split("\r\n")
                     for line in host_msg_buf:
+
+                        # Uncomment if want to hear sockets
                         # print(line)
+
                         line = line.split(" ")
                         if line[0] == "PING":
                             self.send(self.host_sock, "PONG " + line[1])
@@ -179,7 +198,6 @@ class Bot():
                             self.listen()
 
     def send(self, sock, msg):
-        #print("SENDING " + msg)
         try:
             sock.send(bytes(msg + "\r\n", "UTF-8"))
             return True
