@@ -8,7 +8,11 @@ As default PyBot uses chat.freenode.net as masterserver, as hostservers irc.inet
 
 > cd ~/path/to/program/folder
 
-> python3 run.py --master <masterserver> --servers <serverlist> --ssl
+> python3 run.py --master masterserver --servers /path/to/serverlist --ssl
+
+> Example: python3 run.py
+
+> Example: python3 run.py --master chat.freenode.net --servers /root/servers.txt --ssl
 
 PyBot prints you C&C-server's servername and C&C-channel where you can join and start giving commands.
 
@@ -20,7 +24,7 @@ PyBot supports only WHOIS-command at the moment
 
 ### Arguments:
 
---masterserver , optional
+--masterserver , servers name, optional
 
 --servers , takes serverlist as text-file, one server per row, optional
 
