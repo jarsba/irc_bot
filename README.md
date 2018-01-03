@@ -12,6 +12,12 @@ As default PyBot uses chat.freenode.net as masterserver, as hostservers irc.inet
 
 PyBot prints you C&C-server's servername and C&C-channel where you can join and start giving commands.
 
+You can give commands by starting the message with 'cmd' <command>
+
+Example: cmd whois jack
+
+PyBot supports only WHOIS-command at the moment
+
 ### Arguments:
 
 --masterserver , optional
