@@ -11,7 +11,7 @@ Go to folder:
 ```shell
 cd ~/path/to/program/folder
 ```
-R without args:
+Run without args:
 ```shell
 python3 run.py
 ```
