@@ -24,7 +24,9 @@ PyBot prints you C&C-server's servername and C&C-channel where you can join and 
 
 You can give commands by starting the message with 'cmd' <command>
 
+```shell
 Example: cmd whois jack
+```
 
 PyBot supports only WHOIS-command at the moment
 
